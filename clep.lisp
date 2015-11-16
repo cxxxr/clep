@@ -2,7 +2,9 @@
 
 (defpackage clep
   (:use :cl)
-  (:export :clep))
+  (:export
+   :clep-file
+   :clep-sexp))
 
 (in-package :clep)
 
@@ -60,7 +62,7 @@
     (match-search pattern (car tree) matched-fn)
     (match-search pattern (cdr tree) matched-fn)))
 
-(defun clep-file (pattern filename)
+(defun clep-file-internal (pattern filename)
   (with-open-file (in filename)
     (let ((acc))
       (loop :with eof-value := (gensym)
@@ -80,7 +82,7 @@
     :when (equal "lisp" (pathname-type pathname))
     :collect (namestring pathname)))
 
-(defun clep (pattern &rest args)
+(defun clep-file (pattern &rest args)
   (let ((filenames
          (if (null args)
              (collect-lisp-files)
@@ -90,4 +92,11 @@
                            (list arg)))
                      args))))
     (loop :for filename :in filenames
-      :append (clep-file pattern filename))))
+      :append (clep-file-internal pattern filename))))
+
+(defun clep-sexp (pattern x)
+  (let ((acc))
+    (match-search pattern x
+                  #'(lambda (tree binds)
+                      (push (list tree binds) acc)))
+    (nreverse acc)))
