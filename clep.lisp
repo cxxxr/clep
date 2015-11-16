@@ -8,16 +8,6 @@
 
 (in-package :clep)
 
-(defvar *operator-mark* (gensym "OP"))
-
-(set-macro-character #\} (get-macro-character #\)))
-(set-macro-character #\{
-                     #'(lambda (stream char)
-                         (declare (ignore char))
-                         (cons *operator-mark*
-                               (read-delimited-list
-                                #\} stream t))))
-
 (defun %match (pattern expr binds)
   (cond ((and (symbolp pattern)
               (symbolp expr)
@@ -25,10 +15,10 @@
                      (symbol-name expr)))
          (values binds t))
         ((and (consp pattern)
-              (eq *operator-mark* (first pattern)))
-         (ecase (second pattern)
+              (keywordp (car pattern)))
+         (ecase (car pattern)
            ((:lisp)
-            (when (funcall (third pattern) expr)
+            (when (funcall (cadr pattern) expr)
               (values (cons expr binds) t)))
            ((:*)
             (values (cons expr binds) t))))
