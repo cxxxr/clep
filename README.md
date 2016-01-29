@@ -4,7 +4,7 @@ S式のgrep
 ## 使い方
     ;; sample.lispからシンボルのsetfがある式を探す
     (clep:clep-file '(setf (:lisp symbolp) . (:*))
-               "sample.lisp")
+                    "sample.lisp")
 
     ;; カレントディレクトリの*.lispのファイルから
     ;; #'(lambda ...)の式を探す
