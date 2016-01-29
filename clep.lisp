@@ -68,7 +68,7 @@
       (nreverse acc))))
 
 (defun collect-lisp-files ()
-  (loop :for pathname :in (cl-fad:list-directory "." :follow-symlinks nil)
+  (loop :for pathname :in (uiop/filesystem:directory-files ".")
     :when (equal "lisp" (pathname-type pathname))
     :collect (namestring pathname)))
 
