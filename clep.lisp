@@ -8,6 +8,13 @@
 
 (in-package :clep)
 
+(defstruct state
+  form
+  binds
+  footprints
+  pathname
+  form-count)
+
 (defun %match (pattern expr binds)
   (cond ((and (symbolp pattern)
               (symbolp expr)
@@ -69,11 +76,11 @@
         :until (eq x eof-value)
         :do (match-search pattern x
                           #'(lambda (tree binds footprints)
-                              (push (list pathname
-                                          form-count
-                                          tree
-					  binds
-					  footprints)
+                              (push (make-state :pathname pathname
+						:form-count form-count
+						:form tree
+						:binds binds
+						:footprints footprints)
                                     acc))))
       (nreverse acc))))
 
@@ -96,12 +103,15 @@
 	  (if (null args)
 	      (collect-lisp-files)
 	      (args-to-pathnames args))))
-    (loop :for pathname :in pathnames
+    (loop :for pathname :in (remove-duplicates pathnames :test #'equal)
 	  :append (clep-file-internal pattern pathname))))
 
 (defun clep-sexp (pattern x)
   (let ((acc))
     (match-search pattern x
                   #'(lambda (tree binds footprints)
-                      (push (list tree binds footprints) acc)))
+                      (push (make-state :form tree
+					:binds binds
+					:footprints footprints)
+			    acc)))
     (nreverse acc)))
