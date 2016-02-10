@@ -2,11 +2,18 @@
 (defpackage clep
   (:use :cl)
   (:export
+   :search-result
+   :search-result-p
+   :search-result-form
+   :search-result-binds
+   :search-result-footprints
+   :search-result-pathname
+   :search-result-form-count
    :clep-file
    :clep-sexp))
 (in-package :clep)
 
-(defstruct state
+(defstruct search-result
   form
   binds
   footprints
@@ -69,17 +76,18 @@
   (with-open-file (in pathname)
     (let ((acc))
       (loop :with eof-value := (gensym)
-        :for form-count :from 0 :by 1
-        :for x := (read in nil eof-value)
-        :until (eq x eof-value)
-        :do (match-search pattern x
-                          #'(lambda (tree binds footprints)
-                              (push (make-state :pathname pathname
-						:form-count form-count
-						:form tree
-						:binds binds
-						:footprints footprints)
-                                    acc))))
+	    :for form-count :from 0 :by 1
+	    :for x := (read in nil eof-value)
+	    :until (eq x eof-value)
+	    :do (match-search pattern x
+			      #'(lambda (tree binds footprints)
+				  (push (make-search-result
+					 :pathname pathname
+					 :form-count form-count
+					 :form tree
+					 :binds binds
+					 :footprints footprints)
+					acc))))
       (nreverse acc))))
 
 (defun collect-lisp-files ()
@@ -109,8 +117,8 @@
   (let ((acc))
     (match-search pattern x
                   #'(lambda (tree binds footprints)
-                      (push (make-state :form tree
-					:binds binds
-					:footprints footprints)
+                      (push (make-search-result :form tree
+						:binds binds
+						:footprints footprints)
 			    acc)))
     (nreverse acc)))
