@@ -1,11 +1,9 @@
-;; -*- Mode: LISP; Package: CLEP -*-
-
+(in-package :cl-user)
 (defpackage clep
   (:use :cl)
   (:export
    :clep-file
    :clep-sexp))
-
 (in-package :clep)
 
 (defstruct state
@@ -96,14 +94,15 @@
     (list (args-to-pathnames arg))))
 
 (defun args-to-pathnames (args)
-  (mapcan #'arg-to-pathnames args))
+  (remove-duplicates (mapcan #'arg-to-pathnames args)
+		     :test #'equal))
 
 (defun clep-file (pattern &rest args)
   (let ((pathnames
 	  (if (null args)
 	      (collect-lisp-files)
 	      (args-to-pathnames args))))
-    (loop :for pathname :in (remove-duplicates pathnames :test #'equal)
+    (loop :for pathname :in pathnames
 	  :append (clep-file-internal pattern pathname))))
 
 (defun clep-sexp (pattern x)
