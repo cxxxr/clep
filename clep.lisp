@@ -43,14 +43,22 @@
     (when matched-p
       (values (nreverse binds) t))))
 
-(defun match-search (pattern tree matched-fn)
+(defun match-search (pattern tree matched-fn &optional (ncdr 0) footprints)
   (multiple-value-bind (binds matched-p)
       (match pattern tree)
     (when matched-p
-      (funcall matched-fn tree binds)))
+      (funcall matched-fn tree binds (reverse footprints))))
   (when (consp tree)
-    (match-search pattern (car tree) matched-fn)
-    (match-search pattern (cdr tree) matched-fn)))
+    (match-search pattern
+		  (car tree)
+		  matched-fn
+		  0
+		  (cons ncdr footprints))
+    (match-search pattern
+		  (cdr tree)
+		  matched-fn
+		  (1+ ncdr)
+		  footprints)))
 
 (defun clep-file-internal (pattern filename)
   (with-open-file (in filename)
@@ -60,10 +68,12 @@
         :for x := (read in nil eof-value)
         :until (eq x eof-value)
         :do (match-search pattern x
-                          #'(lambda (tree binds)
+                          #'(lambda (tree binds footprints)
                               (push (list filename
                                           form-count
-                                          tree binds)
+                                          tree
+					  binds
+					  footprints)
                                     acc))))
       (nreverse acc))))
 
@@ -87,6 +97,6 @@
 (defun clep-sexp (pattern x)
   (let ((acc))
     (match-search pattern x
-                  #'(lambda (tree binds)
-                      (push (list tree binds) acc)))
+                  #'(lambda (tree binds footprints)
+                      (push (list tree binds footprints) acc)))
     (nreverse acc)))
