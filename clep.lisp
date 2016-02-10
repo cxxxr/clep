@@ -60,8 +60,8 @@
 		  (1+ ncdr)
 		  footprints)))
 
-(defun clep-file-internal (pattern filename)
-  (with-open-file (in filename)
+(defun clep-file-internal (pattern pathname)
+  (with-open-file (in pathname)
     (let ((acc))
       (loop :with eof-value := (gensym)
         :for form-count :from 0 :by 1
@@ -69,7 +69,7 @@
         :until (eq x eof-value)
         :do (match-search pattern x
                           #'(lambda (tree binds footprints)
-                              (push (list filename
+                              (push (list pathname
                                           form-count
                                           tree
 					  binds
@@ -80,19 +80,24 @@
 (defun collect-lisp-files ()
   (loop :for pathname :in (uiop/filesystem:directory-files ".")
     :when (equal "lisp" (pathname-type pathname))
-    :collect (namestring pathname)))
+    :collect pathname))
+
+(defun arg-to-pathnames (arg)
+  (etypecase arg
+    (pathname (list arg))
+    (string (list (pathname arg)))
+    (list (args-to-pathnames arg))))
+
+(defun args-to-pathnames (args)
+  (mapcan #'arg-to-pathnames args))
 
 (defun clep-file (pattern &rest args)
-  (let ((filenames
-         (if (null args)
-             (collect-lisp-files)
-             (mapcan #'(lambda (arg)
-                         (etypecase arg
-                           (string (list arg))
-                           (list arg)))
-                     args))))
-    (loop :for filename :in filenames
-      :append (clep-file-internal pattern filename))))
+  (let ((pathnames
+	  (if (null args)
+	      (collect-lisp-files)
+	      (args-to-pathnames args))))
+    (loop :for pathname :in pathnames
+	  :append (clep-file-internal pattern pathname))))
 
 (defun clep-sexp (pattern x)
   (let ((acc))
