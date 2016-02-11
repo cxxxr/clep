@@ -16,6 +16,7 @@
 (defstruct search-result
   form
   binds
+  file-position
   footprints
   pathname
   form-count)
@@ -77,12 +78,16 @@
     (let ((acc))
       (loop :with eof-value := (gensym)
 	    :for form-count :from 0 :by 1
+	    :for filepos := (progn
+			      (peek-char t in nil)
+			      (file-position in))
 	    :for x := (read in nil eof-value)
 	    :until (eq x eof-value)
 	    :do (match-search pattern x
 			      #'(lambda (tree binds footprints)
 				  (push (make-search-result
 					 :pathname pathname
+					 :file-position filepos
 					 :form-count form-count
 					 :form tree
 					 :binds binds
