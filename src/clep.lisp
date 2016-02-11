@@ -9,7 +9,7 @@
    :search-result-footprints
    :search-result-pathname
    :search-result-form-count
-   :clep-file
+   :clep-files
    :clep-sexp))
 (in-package :clep)
 
@@ -53,7 +53,7 @@
   (multiple-value-bind (binds matched-p)
       (%match pattern expr nil)
     (when matched-p
-      (values (nreverse binds) t))))
+      (values (coerce (nreverse binds) 'vector) t))))
 
 (defun match-search (pattern tree matched-fn &optional (ncdr 0) footprints)
   (multiple-value-bind (binds matched-p)
@@ -90,26 +90,12 @@
 					acc))))
       (nreverse acc))))
 
-(defun collect-lisp-files ()
-  (loop :for pathname :in (uiop/filesystem:directory-files ".")
-    :when (equal "lisp" (pathname-type pathname))
-    :collect pathname))
-
-(defun arg-to-pathnames (arg)
-  (etypecase arg
-    (pathname (list arg))
-    (string (list (pathname arg)))
-    (list (args-to-pathnames arg))))
-
-(defun args-to-pathnames (args)
-  (remove-duplicates (mapcan #'arg-to-pathnames args)
-		     :test #'equal))
-
-(defun clep-file (pattern &rest args)
+(defun clep-files (pattern files)
+  (when (not (listp files))
+    (setf files (list files)))
   (let ((pathnames
-	  (if (null args)
-	      (collect-lisp-files)
-	      (args-to-pathnames args))))
+	  (delete-duplicates (mapcar #'pathname files)
+			     :test #'equal)))
     (loop :for pathname :in pathnames
 	  :append (clep-file-internal pattern pathname))))
 
