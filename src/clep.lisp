@@ -9,8 +9,9 @@
    :search-result-footprints
    :search-result-pathname
    :search-result-form-count
-   :clep-files
-   :clep-sexp))
+   :clep-sexp
+   :clep-stream
+   :clep-files))
 (in-package :clep)
 
 (defstruct search-result
@@ -73,37 +74,6 @@
 		  (1+ ncdr)
 		  footprints)))
 
-(defun clep-file-internal (pattern pathname)
-  (with-open-file (in pathname)
-    (let ((acc))
-      (loop :with eof-value := (gensym)
-	    :for form-count :from 0 :by 1
-	    :for filepos := (progn
-			      (peek-char t in nil)
-			      (file-position in))
-	    :for x := (read in nil eof-value)
-	    :until (eq x eof-value)
-	    :do (match-search pattern x
-			      #'(lambda (tree binds footprints)
-				  (push (make-search-result
-					 :pathname pathname
-					 :file-position filepos
-					 :form-count form-count
-					 :form tree
-					 :binds binds
-					 :footprints footprints)
-					acc))))
-      (nreverse acc))))
-
-(defun clep-files (pattern files)
-  (when (not (listp files))
-    (setf files (list files)))
-  (let ((pathnames
-	  (delete-duplicates (mapcar #'pathname files)
-			     :test #'equal)))
-    (loop :for pathname :in pathnames
-	  :append (clep-file-internal pattern pathname))))
-
 (defun clep-sexp (pattern x)
   (let ((acc))
     (match-search pattern x
@@ -113,3 +83,40 @@
 						:footprints footprints)
 			    acc)))
     (nreverse acc)))
+
+(defun clep-stream-internal (pattern stream pathname)
+  (let ((acc))
+    (loop :with eof-value := (gensym)
+	  :for form-count :from 0 :by 1
+	  :for filepos := (progn
+			    (peek-char t stream nil)
+			    (file-position stream))
+	  :for x := (read stream nil eof-value)
+	  :until (eq x eof-value)
+	  :do (match-search pattern x
+			    #'(lambda (tree binds footprints)
+				(push (make-search-result
+				       :pathname pathname
+				       :file-position filepos
+				       :form-count form-count
+				       :form tree
+				       :binds binds
+				       :footprints footprints)
+				      acc))))
+    (nreverse acc)))
+
+(defun clep-stream (pattern stream)
+  (clep-stream-internal pattern stream nil))
+
+(defun clep-file-internal (pattern pathname)
+  (with-open-file (in pathname)
+    (clep-stream-internal pattern in pathname)))
+
+(defun clep-files (pattern files)
+  (when (not (listp files))
+    (setf files (list files)))
+  (let ((pathnames
+	  (delete-duplicates (mapcar #'pathname files)
+			     :test #'equal)))
+    (loop :for pathname :in pathnames
+	  :append (clep-file-internal pattern pathname))))
