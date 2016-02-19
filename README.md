@@ -14,7 +14,6 @@ S式のgrep
     (clep:clep-files '(if (:*) (:*)) '("foo.lisp" "bar.lisp"))
 
     ;; 束縛がないletを探す
-    ;; 2つ目以降のファイルを指定する引数はリストにも対応
     (clep:clep-files '(let () . (:*)) (list "a.lisp" "b.lisp" "c.lisp"))
 
 ## ライセンス
