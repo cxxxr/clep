@@ -22,23 +22,37 @@
   pathname
   form-count)
 
+(defvar *operators* (make-hash-table))
+
+(defmacro define-operator ((operator &rest operator-args) (expr) &body body)
+  (check-type operator symbol)
+  (check-type operator-args list)
+  (check-type expr symbol)
+  `(setf (gethash ',operator *operators*)
+         (cons (lambda (,expr ,@operator-args)
+                 ,@body)
+               ,(length operator-args))))
+
+(define-operator (:*) (expr)
+  (declare (ignore expr))
+  t)
+
+(define-operator (:lisp fun) (expr)
+  (funcall fun expr))
+
 (defun %match (pattern expr binds)
   (cond ((and (symbolp pattern)
               (symbolp expr)
-              (equal (symbol-name pattern)
-                     (symbol-name expr)))
+              (string= pattern expr))
          (values binds t))
         ((and (consp pattern)
-              (case (car pattern)
-                (:lisp
-                 (when (funcall (cadr pattern) expr)
-                   (push expr binds)
-                   t))
-                (:*
-                 (push expr binds)
-                 t)
-                (otherwise
-                 nil)))
+              (let ((matcher-and-argnum (gethash (car pattern) *operators*)))
+                (when matcher-and-argnum
+                  (destructuring-bind (matcher . argnum) matcher-and-argnum
+                    (when (and (= argnum (length (cdr pattern)))
+                               (apply matcher expr (cdr pattern)))
+                      (push expr binds)
+                      t)))))
          (values binds t))
         ((and (consp pattern)
               (consp expr)
