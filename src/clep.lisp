@@ -102,14 +102,20 @@
     (nreverse acc)))
 
 (defun clep-stream-internal (pattern stream pathname)
-  (let ((acc))
-    (loop :with eof-value := (gensym)
+  (let ((results)
+        (package *package*))
+    (loop :with eof-value := '#:eof
 	  :for form-count :from 0 :by 1
 	  :for filepos := (progn
 			    (peek-char t stream nil)
 			    (file-position stream))
-	  :for x := (read stream nil eof-value)
+	  :for x := (let ((*package* package))
+                      (read stream nil eof-value))
 	  :until (eq x eof-value)
+          :do (when (and (consp x)
+                         (eq 'cl:in-package (first x))
+                         (= 2 (length x)))
+                (setf package (or (find-package (second x)) *package*)))
 	  :do (match-search pattern x
 			    #'(lambda (tree binds footprints)
 				(push (make-search-result
@@ -119,8 +125,8 @@
 				       :form tree
 				       :binds binds
 				       :footprints footprints)
-				      acc))))
-    (nreverse acc)))
+				      results))))
+    (nreverse results)))
 
 (defun clep-stream (pattern stream)
   (clep-stream-internal pattern stream nil))
