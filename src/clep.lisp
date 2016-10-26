@@ -11,7 +11,8 @@
    :search-result-form-count
    :clep-sexp
    :clep-stream
-   :clep-files))
+   :clep-files
+   :with-binds))
 (in-package :clep)
 
 (defstruct search-result
@@ -139,3 +140,22 @@
 			     :test #'equal)))
     (loop :for pathname :in pathnames
 	  :append (clep-file-internal pattern pathname))))
+
+(defmacro with-binds (vars expr &body body)
+  (check-type vars list)
+  (let ((g-binds (gensym "BINDS"))
+        (g-search-result (gensym "SEARCH-RESULT")))
+    `(loop for ,g-search-result in ,expr
+           for ,g-binds = (search-result-binds ,g-search-result)
+           collect (let ,(loop for n from 0
+                               for var in vars
+                               collect `(,var (aref ,g-binds ,n)))
+                     ,@body))))
+
+#|
+
+(with-binds (name)
+  (clep-files '(defun (:*) . (:*))  (directory "*.lisp"))
+  name)
+
+|#

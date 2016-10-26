@@ -89,4 +89,9 @@
 	      :PATHNAME ,(merge-pathnames "svg.lisp" *base-directory*)
 	      :FORM-COUNT 3))
 
+(is (with-binds (name)
+        (clep-sexp '(+ (:*) 1) '(defun f (x) (+ x 1)))
+      name)
+    '(x))
+
 (finalize)
