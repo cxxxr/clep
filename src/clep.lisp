@@ -41,11 +41,7 @@
   (funcall fun expr))
 
 (defun %match (pattern expr binds)
-  (cond ((and (symbolp pattern)
-              (symbolp expr)
-              (string= pattern expr))
-         (values binds t))
-        ((and (consp pattern)
+  (cond ((and (consp pattern)
               (let ((matcher-and-argnum (gethash (car pattern) *operators*)))
                 (when matcher-and-argnum
                   (destructuring-bind (matcher . argnum) matcher-and-argnum
@@ -66,7 +62,7 @@
                  (cdr expr)
                  binds))
         (t
-         (values nil nil))))
+         (values binds (eql pattern expr)))))
 
 (defun match (pattern expr)
   (multiple-value-bind (binds matched-p)
