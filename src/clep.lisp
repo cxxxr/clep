@@ -6,6 +6,7 @@
    :search-result-p
    :search-result-form
    :search-result-binds
+   :search-result-file-position
    :search-result-footprints
    :search-result-pathname
    :search-result-form-count
